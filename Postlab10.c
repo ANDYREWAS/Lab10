@@ -28,33 +28,63 @@
 
 #include <xc.h>
 #include <stdint.h>
-
+#include <stdio.h>
+#include <stdlib.h>
 /*------------------------------------------------------------------------------
  * CONSTANTES 
  ------------------------------------------------------------------------------*/
 #define _XTAL_FREQ 1000000
 #define LEN_MSG 28               // Constante para definir largo de mensaje e iteraciones al enviarlo por el serial
+#define IN_MIN 0                // Valor minimo de entrada del potenciometro
+#define IN_MAX 255              // Valor máximo de entrada del potenciometro
+#define OUT_MIN 0               // Valor minimo de ancho de pulso de señal PWM
+#define OUT_MAX 500             // Valor máximo de ancho de pulso de señal PWM
 
 /*------------------------------------------------------------------------------
  * VARIABLES 
  ------------------------------------------------------------------------------*/
-char mensaje[LEN_MSG] = {0x0D,'1','.','L','e', 'e', 'r', ' ', 'p', 'o','t',0x0D,'2','.','E','n','v','i','a','r',' ','A','S','C','I','I', 0x0D, ' ',0x0D,0x20};
+char mensaje = 0;
 uint8_t indice = 0;             // Variable para saber que posición del mensaje enviar al serial
-uint8_t valor_old = 0;          // Variable para guardar el valor anterior recibido
+char valor_old = 0;          // Variable para guardar el valor anterior recibido
+uint8_t pot = 0;          // Variable para guardar el valor anterior recibido
+
+
+
 
 /*------------------------------------------------------------------------------
  * PROTOTIPO DE FUNCIONES 
  ------------------------------------------------------------------------------*/
 void setup(void);
+void cadena(char palabra[]);
+void leerpot(void);
+void enviarASCII(void);
 
 /*------------------------------------------------------------------------------
  * INTERRUPCIONES 
  ------------------------------------------------------------------------------*/
 void __interrupt() isr (void){
-    if(PIR1bits.RCIF){          // Hay datos recibidos?
-        mensaje[27] = RCREG;     // Guardamos valor recibido en el arreglo mensaje
-        PORTD = mensaje[27];     // Mostramos valor recibido en el PORTD
+    if(PIR1bits.ADIF){              // Fue interrupción del ADC?
+        if(ADCON0bits.CHS == 0){    // Verificamos sea AN0 el canal seleccionado
+            pot = ADRESH;         // Mostramos los bits superiores en PORTD
+            
+        }
+        
+        PIR1bits.ADIF = 0;          // Limpiamos bandera de interrupción
     }
+    
+    if(PIR1bits.RCIF){          // Hay datos recibidos?
+        mensaje = RCREG;     // Guardamos valor recibido en el arreglo mensaje
+        TXREG = mensaje;
+        if(mensaje = 49){
+            leerpot();
+        }
+        if(mensaje = 50){
+            enviarASCII();
+        }
+    }
+    
+    
+        
     return;
 }
 
@@ -64,33 +94,33 @@ void __interrupt() isr (void){
 void main(void) {
     setup();
     while(1){
-        //__delay_ms(1000);
-        
-        indice = 0;                             // Reiniciamos indice para enviar todo el mensaje
-        if (valor_old != mensaje[27]){          // Verificamos que el nuevo valor recibido en el serial 
-                                                //   sea diferente al anterior, para imprimir solo 
-            while(indice<LEN_MSG){              // Loop para imprimir el mensaje completo
-                if (PIR1bits.TXIF){             // Esperamos a que esté libre el TXREG para poder enviar por el serial
-                    TXREG = mensaje[indice];    // Cargamos caracter a enviar
-                    indice++;                   // Incrementamos indice para enviar sigiente caracter
-                }
-            }
-            valor_old = mensaje[27];            // Guardamos valor recibido para comparar en siguiente iteración
-                                                //   si el nuevo valor recibido es diferente al anterior. 
+        //ADC
+        if(ADCON0bits.GO == 0){             // No hay proceso de conversion
+           ADCON0bits.GO = 1;              // Iniciamos proceso de conversión
         }
-    }
-    return;
+       
+    }  
+    
+    
 }
+
 
 /*------------------------------------------------------------------------------
  * CONFIGURACION 
  ------------------------------------------------------------------------------*/
 void setup(void){
-    ANSEL = 0;
+
+    ANSEL = 0b00000001;         // AN0
     ANSELH = 0;                 // I/O digitales
     
+    TRISA = 0b00000001;         //AN0 como entrada
+    PORTA = 0;
+    
+    TRISB = 0;
+    PORTB = 0;                  // PORTB como salida
+    
     TRISD = 0;
-    PORTD = 0;                  // PORTD como salida
+    PORTD = 0;                  // PORTB como salida
     
     OSCCONbits.IRCF = 0b100;    // 1MHz
     OSCCONbits.SCS = 1;         // Oscilador interno
@@ -113,4 +143,50 @@ void setup(void){
     INTCONbits.GIE = 1;         // Habilitamos interrupciones globales
     INTCONbits.PEIE = 1;        // Habilitamos interrupciones de perifericos
     PIE1bits.RCIE = 1;          // Habilitamos Interrupciones de recepción
+    PIE1bits.ADIE = 1;          // Habilitamos int. de ADC
+    PIR1bits.ADIF = 0;          // Limpiamos bandera de int. ADC
+    
+    // Configuración ADC
+    ADCON0bits.ADCS = 0b01;     // Fosc/8
+    
+    ADCON1bits.VCFG0 = 0;       // VDD *Referencias internas
+    ADCON1bits.VCFG1 = 1;       // VSS
+    
+    ADCON0bits.CHS = 0b0000;    // Seleccionamos AN0
+    ADCON1bits.ADFM = 0;        // Justificado a la izquierda
+    ADCON0bits.ADON = 1;        // Habilitamos modulo ADC
+    __delay_us(40);
+}
+
+
+
+
+void cadena(char palabra[]){
+    uint8_t i=0;
+        while(palabra[i]!=' '){             
+            TXREG = palabra[i];    
+            i++;
+            //__delay_ms(300);
+            } 
+        return;
+    
+}
+
+void leerpot(void){
+    while(RCREG == 49){
+        PORTD = pot;
+        TXREG = PORTD;
+        //cadena("POT");
+        __delay_ms(1500);
+    }
+   
+   
+}
+
+void enviarASCII (void){
+    while(RCREG == 50){
+        PORTB = RCREG;
+        //cadena("ASCII");
+    }
+    
 }
