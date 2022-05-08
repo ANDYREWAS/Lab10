@@ -145,7 +145,7 @@
         <property key="program-the-device-with-default-config-words" value="true"/>
         <property key="remove-unused-sections" value="true"/>
       </HI-TECH-LINK>
-      <item path="Lab10.c" ex="false" overriding="false">
+      <item path="Lab10.c" ex="true" overriding="false">
         <HI-TECH-COMP>
         </HI-TECH-COMP>
         <HI-TECH-LINK>
@@ -155,7 +155,7 @@
         <XC8-config-global>
         </XC8-config-global>
       </item>
-      <item path="Postlab10.c" ex="true" overriding="false">
+      <item path="Postlab10.c" ex="false" overriding="false">
         <HI-TECH-COMP>
         </HI-TECH-COMP>
         <HI-TECH-LINK>
@@ -166,6 +166,14 @@
         </XC8-config-global>
       </item>
       <item path="Prelab10.c" ex="true" overriding="false">
+        <HI-TECH-COMP>
+        </HI-TECH-COMP>
+        <HI-TECH-LINK>
+        </HI-TECH-LINK>
+        <XC8-CO>
+        </XC8-CO>
+        <XC8-config-global>
+        </XC8-config-global>
       </item>
       <XC8-CO>
         <property key="coverage-enable" value=""/>

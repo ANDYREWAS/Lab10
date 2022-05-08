@@ -32,28 +32,21 @@
  * CONSTANTES 
  ------------------------------------------------------------------------------*/
 #define _XTAL_FREQ 1000000
-#define LEN_MSG 12               // Constante para definir largo de mensaje e iteraciones al enviarlo por el serial
 
 /*------------------------------------------------------------------------------
  * VARIABLES 
  ------------------------------------------------------------------------------*/
-char mensaje[LEN_MSG] = {'H', 'o', 'l', 'a', ' ', 'm', 'u','n','d','o', 0x0D, 0x20};
-uint8_t indice = 0;             // Variable para saber que posición del mensaje enviar al serial
-uint8_t valor_old = 0;          // Variable para guardar el valor anterior recibido
 
 /*------------------------------------------------------------------------------
  * PROTOTIPO DE FUNCIONES 
  ------------------------------------------------------------------------------*/
 void setup(void);
-
+void cadena(char palabra[]);
 /*------------------------------------------------------------------------------
  * INTERRUPCIONES 
  ------------------------------------------------------------------------------*/
 void __interrupt() isr (void){
-    if(PIR1bits.RCIF){          // Hay datos recibidos?
-        mensaje[11] = RCREG;     // Guardamos valor recibido en el arreglo mensaje
-        PORTB = mensaje[11];     // Mostramos valor recibido en el PORTB
-    }
+   
     return;
 }
 
@@ -63,20 +56,7 @@ void __interrupt() isr (void){
 void main(void) {
     setup();
     while(1){
-        //__delay_ms(1000);
-        
-        indice = 0;                             // Reiniciamos indice para enviar todo el mensaje
-        if (valor_old != mensaje[11]){          // Verificamos que el nuevo valor recibido en el serial 
-                                                //   sea diferente al anterior, para imprimir solo 
-            while(indice<LEN_MSG){              // Loop para imprimir el mensaje completo
-                if (PIR1bits.TXIF){             // Esperamos a que esté libre el TXREG para poder enviar por el serial
-                    TXREG = mensaje[indice];    // Cargamos caracter a enviar
-                    indice++;                   // Incrementamos indice para enviar sigiente caracter
-                }
-            }
-            valor_old = mensaje[11];            // Guardamos valor recibido para comparar en siguiente iteración
-                                                //   si el nuevo valor recibido es diferente al anterior. 
-        }
+   
     }
     return;
 }
@@ -112,4 +92,21 @@ void setup(void){
     INTCONbits.GIE = 1;         // Habilitamos interrupciones globales
     INTCONbits.PEIE = 1;        // Habilitamos interrupciones de perifericos
     PIE1bits.RCIE = 1;          // Habilitamos Interrupciones de recepción
+    
+    cadena("Hola");
+    cadena("0x20");
+ 
+    cadena("Mundo");
+ 
+}
+
+void cadena(char palabra[]){
+    uint8_t i=0;
+        while(palabra[i]!=' '){             
+            TXREG = palabra[i];    
+            i++;
+            __delay_ms(300);
+            } 
+        return;
+    
 }
